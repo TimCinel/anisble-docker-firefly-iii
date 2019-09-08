@@ -1,0 +1,92 @@
+---
+# services
+- service:
+   name: docker
+   state: started
+- user:
+    name: "{{ firefly_owner }}"
+    uid: "{{ firefly_owner_id }}"
+- group:
+    name: "{{ firefly_group }}"
+    gid: "{{ firefly_group_id }}"
+
+ 
+# create the build directory and resources
+- file:
+    path: "{{ firefly_build_dir }}"
+    state: directory
+    recurse: yes
+    owner: "{{ firefly_owner }}"
+    group: docker
+- template:
+    src: nginx-location.conf.j2
+    dest: "{{ firefly_build_dir }}/nginx-location.conf"
+
+# create app directories
+- set_fact:
+    firefly_dirs:
+      - "{{ firefly_export_dir }}"
+      - "{{ firefly_upload_dir }}"
+      - "{{ firefly_db_dir }}"
+- file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: "{{ firefly_owner }}"
+    group: "{{ firefly_group }}"
+  with_items: "{{ firefly_dirs }}"
+
+
+- set_fact:
+    firefly_volumes:
+      - "{{ firefly_export_dir }}:/var/www/firefly-iii/storage/export"
+      - "{{ firefly_upload_dir }}:/var/www/firefly-iii/storage/upload"
+    firefly_env:
+      APP_ENV: local
+      APP_KEY: "{{ firefly_app_key }}"
+      FORCE_BASE_URL: "{{ firefly_base_url }}"
+      TZ: "{{ firefly_app_timezone }}"
+      TRUSTED_PROXIES: "{{ firefly_trusted_proxies }}"
+      DB_DATABASE: "{{ firefly_db_database }}"
+      DB_USERNAME: "{{ firefly_db_username }}"
+      DB_PASSWORD: "{{ firefly_db_password }}"
+      DB_CONNECTION: pgsql
+      DB_HOST: "{{ firefly_db_container }}"
+      DB_PORT: 5432
+
+    firefly_db_volumes:
+      - "{{ firefly_db_dir }}:/var/lib/postgresql/data"
+    firefly_db_env:
+      POSTGRES_DATABASE: "{{ firefly_db_database }}"
+      POSTGRES_USER: "{{ firefly_db_username }}"
+      POSTGRES_PASSWORD: "{{ firefly_db_password }}"
+
+- docker_container:
+    name: "{{ firefly_db_container }}"
+    image: "{{ firefly_db_image }}"
+    user: "{{ firefly_owner_id }}:{{ firefly_group_id }}"
+    state: started
+    restart_policy: always
+    volumes: "{{ firefly_db_volumes }}"
+    env: "{{ firefly_db_env }}"
+    memory: "{{ firefly_memory_limit }}"
+    networks:
+      - name: "{{ firefly_docker_network }}"
+- docker_container:
+    name: "{{ firefly_container }}"
+    image: "{{ firefly_docker_image }}"
+    user: root:root
+    state: started
+    restart_policy: always
+    volumes: "{{ firefly_volumes }}"
+    env: "{{ firefly_env | combine(firefly_addtional_app_env)  }}"
+    memory: "{{ firefly_memory_limit }}"
+    networks:
+      - name: "{{ firefly_docker_network }}"
+- docker_container:
+    name: firefly-iii-locations-data
+    image: alpine
+    state: stopped
+    volumes:
+      - "{{ firefly_build_dir }}/nginx-location.conf:{{ firefly_nginx_vhost_locationsd_dir }}/location.conf"
+    command: /bin/true

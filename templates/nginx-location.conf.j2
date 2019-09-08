@@ -1,0 +1,14 @@
+location {{ firefly_nginx_location }} {
+  proxy_pass              http://{{ firefly_container }}/;
+
+  proxy_set_header        Accept-Encoding "";
+  proxy_set_header        Host $host;
+  proxy_set_header        X-Real-IP $remote_addr;
+  proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header        X-Forwarded-Proto $scheme;
+
+  proxy_redirect $scheme://$host {{ firefly_nginx_location }};
+
+  sub_filter $scheme://$host/ https://$host{{ firefly_nginx_location }};
+  sub_filter_once off;
+}

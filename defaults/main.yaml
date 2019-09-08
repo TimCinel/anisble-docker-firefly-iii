@@ -1,0 +1,44 @@
+---
+
+# Required Non-Default Vars:
+
+# firefly_owner: no default
+# firefly_owner_id: no default
+# firefly_group: no default
+# firefly_group_id: no default
+# firefly_build_dir: no default
+# firefly_export_dir: no default
+# firefly_upload_dir: no default
+# firefly_db_dir: no default
+# firefly_db_password: no default
+# firefly_app_key: no default (must be 32 chars)
+# firefly_app_timezone: no default (e.g. Australia/Melbourne)
+# firefly_docker_network: no default
+# firefly_base_url: no default
+
+# SUBDOMAIN CONFIG EXAMPLES:
+# firefly_nginx_server: firefly.example.com
+# letsencrypt_webroot: /var/www/letsencrypt #path to letsencrypt dir in nginx container) 
+# firefly_nginx_ssl_include: /etc/nginx/snippets/ssl_snippet.inc
+
+
+firefly_memory_limit: 150000000
+firefly_container: firefly-iii-app
+firefly_docker_image: jc5x/firefly-iii:release-4.8.0
+firefly_db_container: firefly-iii-db
+firefly_trusted_proxies: "**"
+firefly_db_image: postgres:10
+
+# set to False
+firefly_nginx_location: /firefly/
+# firefly_nginx_server undefined by default
+
+firefly_db_database: firefly # DB_DATABASE
+firefly_db_username: firefly # DB_USERNAME
+
+
+# leave as empty dict if not using
+firefly_addtional_app_env: {}
+
+# you probably need to overwrite this
+firefly_nginx_vhost_locationsd_dir: "/etc/nginx/locations.d/default-firefly-iii"
